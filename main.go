@@ -1,8 +1,7 @@
 package main
 
 import (
-	"math/rand"
-	"time"
+	"sync"
 
 	"github.com/ajtfj/producer-consumer/eventbuffer"
 )
@@ -13,19 +12,19 @@ const (
 	CAP           = 1
 )
 
-func generateEvent() int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(1000)
-}
-
-func producer(eb *eventbuffer.EventBuffer) {
+func producer(eb *eventbuffer.EventBuffer, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for i := 0; i < MAX_EVENTS; i++ {
-		event := generateEvent()
-		eb.Produce(event)
+		eb.Produce(i)
 	}
 }
 
 func main() {
 	eventBuffer := eventbuffer.NewEventBuffer(CAP)
-	go producer(eventBuffer)
+
+	producerWg := sync.WaitGroup{}
+	producerWg.Add(1)
+	go producer(eventBuffer, &producerWg)
+
+	producerWg.Wait()
 }
